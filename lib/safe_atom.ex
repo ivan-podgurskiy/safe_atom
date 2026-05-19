@@ -1,21 +1,154 @@
 defmodule SafeAtom do
   @moduledoc """
-  Public API surface for this library.
+  Safe, whitelist-based casting of values to atoms.
 
-  Replace this module (and the app name in `mix.exs`) with your domain code.
-  Keep the surface small—split into additional modules only when the package
-  truly needs more than one concern.
-  """
+  `SafeAtom` returns only atoms that are explicitly present in the `:allowed`
+  list.
 
-  @doc """
-  Example pure function with doctest.
+  Binary input is never converted with `String.to_atom/1` or
+  `String.to_existing_atom/1`. Instead, binary values are compared with the
+  string representation of atoms already present in `:allowed`.
+
+  This avoids creating new atoms from external input and avoids querying the VM
+  atom table for arbitrary binary values.
 
   ## Examples
 
-      iex> SafeAtom.example(21)
-      42
+      iex> SafeAtom.cast("user", allowed: [:user, :guest])
+      {:ok, :user}
+
+      iex> SafeAtom.cast(:user, allowed: [:user, :guest])
+      {:ok, :user}
+
+      iex> SafeAtom.cast("admin", allowed: [:user, :guest])
+      {:error, :not_allowed}
+
+      iex> SafeAtom.cast(:admin, allowed: [:user, :guest])
+      {:error, :not_allowed}
+
+      iex> SafeAtom.cast("anything", allowed: [])
+      {:error, :not_allowed}
+
+      iex> SafeAtom.cast("user")
+      {:error, :missing_allowed}
+
+      iex> SafeAtom.cast("user", [])
+      {:error, :missing_allowed}
+
+      iex> SafeAtom.cast("user", allowed: ["user"])
+      {:error, :invalid_allowed}
+
+      iex> SafeAtom.cast(123, allowed: [:user])
+      {:error, :invalid_value}
+
+      iex> SafeAtom.cast(nil, allowed: [:user])
+      {:error, :not_allowed}
+
+      iex> SafeAtom.cast(nil, allowed: [nil])
+      {:ok, nil}
+
+  ## Error reasons
+
+    * `:missing_allowed` - the `:allowed` option was not provided.
+    * `:invalid_allowed` - `:allowed` is not a list of atoms.
+    * `:invalid_value` - the input value is not a binary or an atom.
+    * `:not_allowed` - the input value is valid, but does not match any allowed atom.
+  """
+
+  @type reason ::
+          :missing_allowed
+          | :invalid_allowed
+          | :invalid_value
+          | :not_allowed
+
+  @doc """
+  Casts a binary or atom to one of the explicitly allowed atoms.
+
+  The `:allowed` option is required and must be a list of atoms.
+
+  For binary input, `SafeAtom` compares the input with `Atom.to_string/1` for
+  each allowed atom. The returned atom is always taken from the `:allowed` list.
+
+  Returns `{:error, :missing_allowed}` when called without the `:allowed`
+  option.
+
+  ## Examples
+
+      iex> SafeAtom.cast("user", allowed: [:user, :guest])
+      {:ok, :user}
+
+      iex> SafeAtom.cast(:guest, allowed: [:user, :guest])
+      {:ok, :guest}
+
+      iex> SafeAtom.cast("admin", allowed: [:user, :guest])
+      {:error, :not_allowed}
+
+      iex> SafeAtom.cast(:admin, allowed: [:user, :guest])
+      {:error, :not_allowed}
+
+      iex> SafeAtom.cast("user", allowed: [])
+      {:error, :not_allowed}
+
+      iex> SafeAtom.cast("user")
+      {:error, :missing_allowed}
+
+      iex> SafeAtom.cast("user", [])
+      {:error, :missing_allowed}
+
+      iex> SafeAtom.cast("user", allowed: :user)
+      {:error, :invalid_allowed}
+
+      iex> SafeAtom.cast("user", allowed: [:user, "guest"])
+      {:error, :invalid_allowed}
+
+      iex> SafeAtom.cast(123, allowed: [:user])
+      {:error, :invalid_value}
+
+      iex> SafeAtom.cast(nil, allowed: [nil])
+      {:ok, nil}
 
   """
-  @spec example(integer()) :: integer()
-  def example(n) when is_integer(n), do: n * 2
+  @spec cast(term(), keyword()) :: {:ok, atom()} | {:error, reason()}
+  def cast(value, allowed: allowed) do
+    cond do
+      not is_list(allowed) ->
+        {:error, :invalid_allowed}
+
+      not Enum.all?(allowed, &is_atom/1) ->
+        {:error, :invalid_allowed}
+
+      not is_binary(value) and not is_atom(value) ->
+        {:error, :invalid_value}
+
+      true ->
+        case find_allowed(value, allowed) do
+          {:ok, allowed_atom} -> {:ok, allowed_atom}
+          :error -> {:error, :not_allowed}
+        end
+    end
+  end
+
+  @spec cast(term(), term()) :: {:error, :missing_allowed}
+  def cast(_value, _opts), do: {:error, :missing_allowed}
+
+  @spec cast(term()) :: {:error, :missing_allowed}
+  def cast(_value), do: {:error, :missing_allowed}
+
+  @spec find_allowed(atom(), [atom()]) :: {:ok, atom()} | :error
+  defp find_allowed(value, allowed) when is_atom(value) do
+    if value in allowed do
+      {:ok, value}
+    else
+      :error
+    end
+  end
+
+  @spec find_allowed(binary(), [atom()]) :: {:ok, atom()} | :error
+  defp find_allowed(value, allowed) when is_binary(value) do
+    Enum.find_value(allowed, :error, fn allowed_atom ->
+      if Atom.to_string(allowed_atom) == value do
+        {:ok, allowed_atom}
+      end
+    end)
+  end
 end
