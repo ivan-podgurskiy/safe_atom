@@ -2,7 +2,7 @@ defmodule SafeAtom.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/ivan-podgurskiy/hex-skeleton"
+  @source_url "https://github.com/ivan-podgurskiy/safe_atom"
 
   def project do
     [
@@ -12,7 +12,7 @@ defmodule SafeAtom.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
 
-      # Hex (optional metadata if you ever publish)
+      # Hex
       description: description(),
       package: package(),
 
@@ -31,9 +31,10 @@ defmodule SafeAtom.MixProject do
   end
 
   def application do
-    [extra_applications: [:logger]]
+    []
   end
 
+  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:telemetry, "~> 1.0"},
@@ -44,14 +45,15 @@ defmodule SafeAtom.MixProject do
   end
 
   defp description do
-    "Replace with a one-line description of your internal library."
+    "Whitelist-based casting of values to atoms without growing the VM atom table from untrusted input."
   end
 
   defp package do
     [
       files: ~w(lib .formatter.exs mix.exs README.md LICENSE CHANGELOG.md),
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url}
+      links: %{"GitHub" => @source_url},
+      maintainers: ["Ivan Podgurskiy"]
     ]
   end
 

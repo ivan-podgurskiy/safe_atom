@@ -81,6 +81,28 @@ atom table for every lookup.
 `SafeAtom` keeps casting explicit: you declare the finite set of atoms you accept,
 and only those atoms can be returned.
 
+## Telemetry
+
+`SafeAtom` emits one event whenever `cast/2` returns an error:
+
+| Event | Measurements | Metadata |
+| --- | --- | --- |
+| `[:safe_atom, :cast, :rejected]` | `%{}` | `%{reason, value, allowed}` |
+
+Successful casts do not emit events. Attach a handler with `:telemetry.attach/4`
+to log rejections or aggregate rates.
+
+```elixir
+:telemetry.attach(
+  "safe-atom-rejections",
+  [:safe_atom, :cast, :rejected],
+  fn _event, _measurements, %{reason: reason, value: value}, _config ->
+    Logger.warning("SafeAtom rejected #{inspect(value)}: #{reason}")
+  end,
+  nil
+)
+```
+
 ## Development
 
 ```bash
