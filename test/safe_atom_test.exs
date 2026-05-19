@@ -42,8 +42,41 @@ defmodule SafeAtomTest do
     end
 
     test "returns missing_allowed when allowed option is missing" do
-      assert SafeAtom.cast("user") == {:error, :missing_allowed}
       assert SafeAtom.cast("user", []) == {:error, :missing_allowed}
+    end
+  end
+
+  describe "cast!/2" do
+    test "returns the atom when casting succeeds" do
+      assert SafeAtom.cast!("user", allowed: [:user]) == :user
+    end
+
+    test "raises SafeAtom.Error when casting fails" do
+      assert_raise SafeAtom.Error, fn ->
+        SafeAtom.cast!("admin", allowed: [:user])
+      end
+    end
+
+    test "raises SafeAtom.Error when opts is not a keyword list" do
+      error =
+        assert_raise SafeAtom.Error, fn ->
+          SafeAtom.cast!("user", :bad)
+        end
+
+      assert error.reason == :missing_allowed
+      assert error.value == "user"
+      assert error.allowed == nil
+    end
+
+    test "raises SafeAtom.Error with failure details" do
+      error =
+        assert_raise SafeAtom.Error, fn ->
+          SafeAtom.cast!("admin", allowed: [:user])
+        end
+
+      assert error.reason == :not_allowed
+      assert error.value == "admin"
+      assert error.allowed == [:user]
     end
   end
 end

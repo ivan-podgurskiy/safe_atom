@@ -29,9 +29,6 @@ defmodule SafeAtom do
       iex> SafeAtom.cast("anything", allowed: [])
       {:error, :not_allowed}
 
-      iex> SafeAtom.cast("user")
-      {:error, :missing_allowed}
-
       iex> SafeAtom.cast("user", [])
       {:error, :missing_allowed}
 
@@ -69,8 +66,8 @@ defmodule SafeAtom do
   For binary input, `SafeAtom` compares the input with `Atom.to_string/1` for
   each allowed atom. The returned atom is always taken from the `:allowed` list.
 
-  Returns `{:error, :missing_allowed}` when called without the `:allowed`
-  option.
+  Returns `{:error, :missing_allowed}` when called with options that do not
+  contain `:allowed`.
 
   ## Examples
 
@@ -88,9 +85,6 @@ defmodule SafeAtom do
 
       iex> SafeAtom.cast("user", allowed: [])
       {:error, :not_allowed}
-
-      iex> SafeAtom.cast("user")
-      {:error, :missing_allowed}
 
       iex> SafeAtom.cast("user", [])
       {:error, :missing_allowed}
@@ -131,8 +125,19 @@ defmodule SafeAtom do
   @spec cast(term(), term()) :: {:error, :missing_allowed}
   def cast(_value, _opts), do: {:error, :missing_allowed}
 
-  @spec cast(term()) :: {:error, :missing_allowed}
-  def cast(_value), do: {:error, :missing_allowed}
+  @spec cast!(term(), keyword()) :: atom()
+  def cast!(value, opts) do
+    case cast(value, opts) do
+      {:ok, atom} ->
+        atom
+
+      {:error, reason} ->
+        raise SafeAtom.Error,
+          value: value,
+          reason: reason,
+          allowed: allowed_from_opts(opts)
+    end
+  end
 
   @spec find_allowed(atom(), [atom()]) :: {:ok, atom()} | :error
   defp find_allowed(value, allowed) when is_atom(value) do
@@ -151,4 +156,8 @@ defmodule SafeAtom do
       end
     end)
   end
+
+  @spec allowed_from_opts(term()) :: term()
+  defp allowed_from_opts(opts) when is_list(opts), do: Keyword.get(opts, :allowed)
+  defp allowed_from_opts(_opts), do: nil
 end
