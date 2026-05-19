@@ -1,44 +1,95 @@
 # SafeAtom
 
-[![CI](https://github.com/ivan-podgurskiy/hex-skeleton/actions/workflows/ci.yml/badge.svg)](https://github.com/ivan-podgurskiy/hex-skeleton/actions/workflows/ci.yml)
+[![CI](https://github.com/ivan-podgurskiy/safe_atom/actions/workflows/ci.yml/badge.svg)](https://github.com/ivan-podgurskiy/safe_atom/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Internal Elixir library skeleton: single public module, Credo, Dialyzer,
-ExDoc-ready metadata—aligned with how mature in-repo packages are
-structured (same CI shape as reference OSS libs).
+Whitelist-based casting of values to atoms without growing the VM atom table from
+untrusted input.
 
-Update the README CI link, `mix.exs` `@source_url`, and `CHANGELOG` release URLs
-to match your repo when publishing.
+`SafeAtom` never calls `String.to_atom/1` or `String.to_existing_atom/1` on
+external data. Binary input is matched against `Atom.to_string/1` for atoms you
+already listed in `:allowed`, and the returned atom always comes from that list.
 
 ## Installation
 
-In sibling app `mix.exs`:
+Add `safe_atom` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:safe_atom, path: "../safe_atom"}
+    {:safe_atom, "~> 0.1"}
   ]
 end
 ```
 
-Adjust the path or use `git:` / organization package name as you prefer.
+Or depend on the Git repository:
+
+```elixir
+{:safe_atom, git: "https://github.com/ivan-podgurskiy/safe_atom.git"}
+```
 
 ## Quick start
 
 ```elixir
-SafeAtom.example(21)
-# => 42
+SafeAtom.cast("user", allowed: [:user, :guest])
+# => {:ok, :user}
+
+SafeAtom.cast(:guest, allowed: [:user, :guest])
+# => {:ok, :guest}
+
+SafeAtom.cast("admin", allowed: [:user, :guest])
+# => {:error, :not_allowed}
+
+SafeAtom.cast!("user", allowed: [:user, :guest])
+# => :user
 ```
 
-Documentation is generated with `mix docs`; defaults follow `mix.exs` `docs:` (main
-module page + README + changelog).
+## API
+
+### `SafeAtom.cast/2`
+
+Casts a binary or atom to one of the atoms in `allowed: [...]`.
+
+- `:allowed` is required and must be a list of atoms.
+- Binary input is compared to each allowed atom’s string form.
+- Atom input must already be a member of `:allowed`.
+- `nil` is treated as an atom; include `nil` in `:allowed` if you need it.
+
+Returns `{:ok, atom()}` or `{:error, reason}`.
+
+### `SafeAtom.cast!/2`
+
+Same as `cast/2`, but raises `SafeAtom.Error` on failure. The exception carries
+`value`, `reason`, and `allowed` for debugging.
+
+### Error reasons
+
+| Reason | When |
+| --- | --- |
+| `:missing_allowed` | `:allowed` was not provided |
+| `:invalid_allowed` | `:allowed` is not a list of atoms |
+| `:invalid_value` | Input is neither a binary nor an atom |
+| `:not_allowed` | Input is valid but not in the whitelist |
 
 ## Why?
 
-Reuse one proven layout for every internal Hex-style library so CI, formatting, and
-static analysis stay consistent without copying `mix.exs` errors by hand.
+Atoms in the Erlang VM are not garbage-collected. Calling `String.to_atom/1` on
+user-controlled strings can exhaust the atom table and crash the node.
+`String.to_existing_atom/1` avoids creating new atoms but still walks the global
+atom table for every lookup.
+
+`SafeAtom` keeps casting explicit: you declare the finite set of atoms you accept,
+and only those atoms can be returned.
+
+## Development
+
+```bash
+mix test
+mix credo --strict
+mix dialyzer
+mix docs
+```
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT © Ivan Podgurskiy. See [LICENSE](LICENSE).
