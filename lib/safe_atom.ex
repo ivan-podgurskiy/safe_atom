@@ -59,7 +59,8 @@ defmodule SafeAtom do
 
   Emitted whenever `cast/2` returns `{:error, reason}`.
 
-  * **measurements**: `%{}`
+  * **measurements**:
+    * `:system_time` - `System.system_time/0` at the moment of rejection
   * **metadata**:
     * `:reason` - one of `:missing_allowed`, `:invalid_allowed`, `:invalid_value`, or `:not_allowed`
     * `:value` - the input value passed to `cast/2`
@@ -179,7 +180,7 @@ defmodule SafeAtom do
   defp reject(value, reason, allowed) do
     :telemetry.execute(
       [:safe_atom, :cast, :rejected],
-      %{},
+      %{system_time: System.system_time()},
       %{reason: reason, value: value, allowed: allowed}
     )
 

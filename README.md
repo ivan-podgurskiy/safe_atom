@@ -87,7 +87,7 @@ and only those atoms can be returned.
 
 | Event | Measurements | Metadata |
 | --- | --- | --- |
-| `[:safe_atom, :cast, :rejected]` | `%{}` | `%{reason, value, allowed}` |
+| `[:safe_atom, :cast, :rejected]` | `%{system_time: integer()}` | `%{reason, value, allowed}` |
 
 Successful casts do not emit events. Attach a handler with `:telemetry.attach/4`
 to log rejections or aggregate rates.

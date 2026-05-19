@@ -61,7 +61,8 @@ defmodule SafeAtomTest do
 
       assert SafeAtom.cast("admin", allowed: [:user]) == {:error, :not_allowed}
 
-      assert_received {[:safe_atom, :cast, :rejected], ^ref, %{}, metadata}
+      assert_received {[:safe_atom, :cast, :rejected], ^ref, measurements, metadata}
+      assert is_integer(measurements.system_time)
       assert metadata == %{reason: :not_allowed, value: "admin", allowed: [:user]}
 
       assert SafeAtom.cast(1, allowed: [:user]) == {:error, :invalid_value}
