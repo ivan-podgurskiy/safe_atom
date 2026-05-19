@@ -46,6 +46,48 @@ defmodule SafeAtomTest do
     end
   end
 
+  describe "telemetry" do
+    test "does not emit telemetry when cast succeeds" do
+      ref = :telemetry_test.attach_event_handlers(self(), [[:safe_atom, :cast, :rejected]])
+
+      assert SafeAtom.cast("user", allowed: [:user]) == {:ok, :user}
+      refute_received {[:safe_atom, :cast, :rejected], ^ref, _, _}
+
+      :telemetry.detach(ref)
+    end
+
+    test "emits [:safe_atom, :cast, :rejected] for all error reasons" do
+      ref = :telemetry_test.attach_event_handlers(self(), [[:safe_atom, :cast, :rejected]])
+
+      assert SafeAtom.cast("admin", allowed: [:user]) == {:error, :not_allowed}
+
+      assert_received {[:safe_atom, :cast, :rejected], ^ref, %{}, metadata}
+      assert metadata == %{reason: :not_allowed, value: "admin", allowed: [:user]}
+
+      assert SafeAtom.cast(1, allowed: [:user]) == {:error, :invalid_value}
+
+      assert_received {[:safe_atom, :cast, :rejected], ^ref, %{}, metadata}
+      assert metadata == %{reason: :invalid_value, value: 1, allowed: [:user]}
+
+      assert SafeAtom.cast("user", allowed: ["user"]) == {:error, :invalid_allowed}
+
+      assert_received {[:safe_atom, :cast, :rejected], ^ref, %{}, metadata}
+      assert metadata == %{reason: :invalid_allowed, value: "user", allowed: ["user"]}
+
+      assert SafeAtom.cast("user", allowed: :user) == {:error, :invalid_allowed}
+
+      assert_received {[:safe_atom, :cast, :rejected], ^ref, %{}, metadata}
+      assert metadata == %{reason: :invalid_allowed, value: "user", allowed: :user}
+
+      assert SafeAtom.cast("user", []) == {:error, :missing_allowed}
+
+      assert_received {[:safe_atom, :cast, :rejected], ^ref, %{}, metadata}
+      assert metadata == %{reason: :missing_allowed, value: "user", allowed: nil}
+
+      :telemetry.detach(ref)
+    end
+  end
+
   describe "cast!/2" do
     test "returns the atom when casting succeeds" do
       assert SafeAtom.cast!("user", allowed: [:user]) == :user

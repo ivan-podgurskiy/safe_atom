@@ -50,6 +50,20 @@ defmodule SafeAtom do
     * `:invalid_allowed` - `:allowed` is not a list of atoms.
     * `:invalid_value` - the input value is not a binary or an atom.
     * `:not_allowed` - the input value is valid, but does not match any allowed atom.
+
+  ## Telemetry events
+
+  `SafeAtom` emits the following [Telemetry](https://hexdocs.pm/telemetry/) events:
+
+  ### `[:safe_atom, :cast, :rejected]`
+
+  Emitted whenever `cast/2` returns `{:error, reason}`.
+
+  * **measurements**: `%{}`
+  * **metadata**:
+    * `:reason` - one of `:missing_allowed`, `:invalid_allowed`, `:invalid_value`, or `:not_allowed`
+    * `:value` - the input value passed to `cast/2`
+    * `:allowed` - the `:allowed` option value, or `nil` when the option is missing
   """
 
   @type reason ::
@@ -106,24 +120,24 @@ defmodule SafeAtom do
   def cast(value, allowed: allowed) do
     cond do
       not is_list(allowed) ->
-        {:error, :invalid_allowed}
+        reject(value, :invalid_allowed, allowed)
 
       not Enum.all?(allowed, &is_atom/1) ->
-        {:error, :invalid_allowed}
+        reject(value, :invalid_allowed, allowed)
 
       not is_binary(value) and not is_atom(value) ->
-        {:error, :invalid_value}
+        reject(value, :invalid_value, allowed)
 
       true ->
         case find_allowed(value, allowed) do
           {:ok, allowed_atom} -> {:ok, allowed_atom}
-          :error -> {:error, :not_allowed}
+          :error -> reject(value, :not_allowed, allowed)
         end
     end
   end
 
   @spec cast(term(), term()) :: {:error, :missing_allowed}
-  def cast(_value, _opts), do: {:error, :missing_allowed}
+  def cast(value, _opts), do: reject(value, :missing_allowed, nil)
 
   @spec cast!(term(), keyword()) :: atom()
   def cast!(value, opts) do
@@ -160,4 +174,15 @@ defmodule SafeAtom do
   @spec allowed_from_opts(term()) :: term()
   defp allowed_from_opts(opts) when is_list(opts), do: Keyword.get(opts, :allowed)
   defp allowed_from_opts(_opts), do: nil
+
+  @spec reject(term(), reason(), term()) :: {:error, reason()}
+  defp reject(value, reason, allowed) do
+    :telemetry.execute(
+      [:safe_atom, :cast, :rejected],
+      %{},
+      %{reason: reason, value: value, allowed: allowed}
+    )
+
+    {:error, reason}
+  end
 end
