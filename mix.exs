@@ -1,4 +1,4 @@
-defmodule MyPackage.MixProject do
+defmodule SafeAtom.MixProject do
   use Mix.Project
 
   @version "0.1.0"
@@ -6,7 +6,7 @@ defmodule MyPackage.MixProject do
 
   def project do
     [
-      app: :my_package,
+      app: :safe_atom,
       version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
@@ -17,7 +17,7 @@ defmodule MyPackage.MixProject do
       package: package(),
 
       # Docs
-      name: "MyPackage",
+      name: "SafeAtom",
       source_url: @source_url,
       docs: docs(),
 
@@ -57,7 +57,7 @@ defmodule MyPackage.MixProject do
 
   defp docs do
     [
-      main: "MyPackage",
+      main: "SafeAtom",
       source_ref: "v#{@version}",
       source_url: @source_url,
       extras: ["README.md", "CHANGELOG.md"]

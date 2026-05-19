@@ -1,4 +1,4 @@
-defmodule MyPackage do
+defmodule SafeAtom do
   @moduledoc """
   Public API surface for this library.
 
@@ -12,7 +12,7 @@ defmodule MyPackage do
 
   ## Examples
 
-      iex> MyPackage.example(21)
+      iex> SafeAtom.example(21)
       42
 
   """

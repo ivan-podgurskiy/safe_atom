@@ -10,6 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Skeleton matching internal-package layout: `mix.exs`, ExDoc, Credo, Dialyzer, CI.
-- Example API `MyPackage.example/1`, unit tests, and `stream_data` property test.
+- Example API `SafeAtom.example/1`, unit tests, and `stream_data` property test.
 
 [0.1.0]: https://github.com/ivan-podgurskiy/hex-skeleton/releases/tag/v0.1.0

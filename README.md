@@ -1,4 +1,4 @@
-# MyPackage
+# SafeAtom
 
 [![CI](https://github.com/ivan-podgurskiy/hex-skeleton/actions/workflows/ci.yml/badge.svg)](https://github.com/ivan-podgurskiy/hex-skeleton/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -7,9 +7,8 @@ Internal Elixir library skeleton: single public module, `stream_data` property t
 Credo, Dialyzer, ExDoc-ready metadata—aligned with how mature in-repo packages are
 structured (same CI shape as reference OSS libs).
 
-Rename the app (`:my_package` → `:your_app`), module (`MyPackage` → `YourApp`), and
-paths when cloning; update the README CI link, `mix.exs` `@source_url`, and
-`CHANGELOG` release URLs to match your repo.
+Update the README CI link, `mix.exs` `@source_url`, and `CHANGELOG` release URLs
+to match your repo when publishing.
 
 ## Installation
 
@@ -18,7 +17,7 @@ In sibling app `mix.exs`:
 ```elixir
 def deps do
   [
-    {:my_package, path: "../my_package"}
+    {:safe_atom, path: "../safe_atom"}
   ]
 end
 ```
@@ -28,7 +27,7 @@ Adjust the path or use `git:` / organization package name as you prefer.
 ## Quick start
 
 ```elixir
-MyPackage.example(21)
+SafeAtom.example(21)
 # => 42
 ```
 
