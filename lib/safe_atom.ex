@@ -8,7 +8,7 @@ defmodule SafeAtom do
   """
 
   @doc """
-  Example pure function with doctest and property-test-friendly behavior.
+  Example pure function with doctest.
 
   ## Examples
 
