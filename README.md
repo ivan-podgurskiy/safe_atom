@@ -1,6 +1,7 @@
 # SafeAtom
 
 [![CI](https://github.com/ivan-podgurskiy/safe_atom/actions/workflows/ci.yml/badge.svg)](https://github.com/ivan-podgurskiy/safe_atom/actions/workflows/ci.yml)
+[![Hex pm](https://img.shields.io/hexpm/v/safe_atom.svg)](https://hex.pm/packages/safe_atom)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Whitelist-based casting of values to atoms without growing the VM atom table from
@@ -17,7 +18,7 @@ Add `safe_atom` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:safe_atom, "~> 0.1"}
+    {:safe_atom, "~> 0.2"}
   ]
 end
 ```
@@ -70,6 +71,39 @@ Same as `cast/2`, but raises `SafeAtom.Error` on failure. The exception carries
 | `:invalid_allowed` | `:allowed` is not a list of atoms |
 | `:invalid_value` | Input is neither a binary nor an atom |
 | `:not_allowed` | Input is valid but not in the whitelist |
+
+## Ecto
+
+`SafeAtom.Ecto.Enum` is a parameterized Ecto type for atom enum fields. It uses the
+same whitelist rules as `SafeAtom.cast/2` for changeset input and database
+load/dump. Values are stored as strings (like `Ecto.Enum`).
+
+Add both `safe_atom` and `ecto` to your app:
+
+```elixir
+def deps do
+  [
+    {:safe_atom, "~> 0.2"},
+    {:ecto, "~> 3.11"}
+  ]
+end
+```
+
+Migration:
+
+```elixir
+add :role, :string
+```
+
+Schema:
+
+```elixir
+field :role, SafeAtom.Ecto.Enum, values: [:user, :guest]
+```
+
+Changeset casting accepts whitelisted strings and atoms; invalid values produce
+Ecto inclusion errors. On insert, whitelisted atoms dump to their string form; on
+load, DB strings are matched against `values` without `String.to_atom/1`.
 
 ## Why?
 

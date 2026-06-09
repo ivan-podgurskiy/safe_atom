@@ -12,7 +12,7 @@ Safely cast a string or atom to an atom from an explicit `:allowed` whitelist, w
 - Telemetry `[:safe_atom, :cast, :rejected]` on rejections only
 - README explaining the `String.to_atom/1` risk, tests, doctest, CI
 
-Out of scope for the first release: global whitelists in config, Ecto/Plug, `:on_reject` callbacks, auto-whitelist from all VM atoms.
+Out of scope for the first release: global whitelists in config, Plug, `:on_reject` callbacks, auto-whitelist from all VM atoms.
 
 ## What we shipped (v0.1.0)
 
@@ -24,9 +24,13 @@ Out of scope for the first release: global whitelists in config, Ecto/Plug, `:on
 - Unit tests, doctests, telemetry covered with `:telemetry_test`
 - README (including Why?), ExDoc, Credo, Dialyzer, CI, Hex publish
 
+## What we shipped (v0.2.0)
+
+- `SafeAtom.Ecto.Enum` — Ecto type with required `values:` for string-backed atom enum fields (optional `ecto` dep)
+- cast / load / dump via `SafeAtom.cast/2`; Ecto-style inclusion errors on changesets
+
 ## What’s next
 
-- Ecto type for atom enum fields
 - Plug helper for params
 - Whitelist via `Application` config
 - Per-field whitelists (`:allowed_per_field`)

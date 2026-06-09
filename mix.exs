@@ -1,7 +1,7 @@
 defmodule SafeAtom.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @source_url "https://github.com/ivan-podgurskiy/safe_atom"
 
   def project do
@@ -38,6 +38,7 @@ defmodule SafeAtom.MixProject do
   defp deps do
     [
       {:telemetry, "~> 1.0"},
+      {:ecto, "~> 3.11", optional: true},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
