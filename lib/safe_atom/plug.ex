@@ -19,6 +19,8 @@ if Code.ensure_loaded?(Plug.Conn) do
     Casts named request parameters against per-field atom whitelists.
     """
 
+    @behaviour Plug
+
     alias SafeAtom.Plug.Rejection
 
     @type fields :: %{atom() => [atom()]}
@@ -27,6 +29,7 @@ if Code.ensure_loaded?(Plug.Conn) do
             | :halt
             | (Plug.Conn.t(), Rejection.t() -> Plug.Conn.t())
 
+    @impl Plug
     @spec init(keyword()) :: keyword()
     def init(opts) do
       fields =
@@ -41,6 +44,16 @@ if Code.ensure_loaded?(Plug.Conn) do
       validate_on_reject!(on_reject)
 
       [fields: fields, on_reject: on_reject]
+    end
+
+    @impl Plug
+    @spec call(Plug.Conn.t(), keyword()) :: Plug.Conn.t()
+    def call(conn, opts) do
+      cast_params(
+        conn,
+        Keyword.fetch!(opts, :fields),
+        on_reject: Keyword.fetch!(opts, :on_reject)
+      )
     end
 
     @spec cast_params(Plug.Conn.t(), fields(), keyword()) :: Plug.Conn.t()
@@ -96,6 +109,17 @@ if Code.ensure_loaded?(Plug.Conn) do
           ) :: Plug.Conn.t()
     defp handle_rejection(conn, key, _rejection, :drop) do
       %{conn | params: Map.delete(conn.params, key)}
+    end
+
+    defp handle_rejection(conn, _key, _rejection, :halt) do
+      conn
+      |> Plug.Conn.send_resp(400, "Bad Request")
+      |> Plug.Conn.halt()
+    end
+
+    defp handle_rejection(conn, _key, rejection, on_reject)
+         when is_function(on_reject, 2) do
+      on_reject.(conn, rejection)
     end
 
     @spec continue_or_halt(Plug.Conn.t()) ::
