@@ -27,9 +27,26 @@ if Code.ensure_loaded?(Plug.Conn) do
         plug SafeAtom.Plug,
           fields: %{status: [:active, :archived], sort: [:asc, :desc]}
 
-    Use `on_reject: :halt` to send a 400 response and halt the connection, or pass
-    a two-arity function that receives the connection and a
-    `SafeAtom.Plug.Rejection` structure.
+    Use `on_reject: :halt` to send a 400 response and halt the connection. For
+    application-specific handling in a module plug, pass an escapable external
+    remote function capture:
+
+        defmodule MyApp.ParamPipeline do
+          use Plug.Builder
+
+          plug SafeAtom.Plug,
+            fields: %{status: [:active, :archived]},
+            on_reject: &__MODULE__.handle_rejection/2
+
+          def handle_rejection(conn, rejection) do
+            Plug.Conn.assign(conn, :safe_atom_rejection, rejection)
+          end
+        end
+
+    The function receives the connection and a `SafeAtom.Plug.Rejection`.
+    `Plug.Builder` cannot escape anonymous closures in initialized module-plug
+    options. Direct calls to `cast_params/3` accept any two-arity function,
+    including closures.
 
     ## Function plug
 
@@ -155,7 +172,7 @@ if Code.ensure_loaded?(Plug.Conn) do
     defp continue_or_halt(conn), do: {:cont, conn}
 
     @spec validate_fields!(term()) :: :ok
-    defp validate_fields!(fields) when is_map(fields) do
+    defp validate_fields!(fields) when is_map(fields) and not is_struct(fields) do
       if Enum.all?(fields, fn
            {field, allowed} when is_atom(field) and is_list(allowed) ->
              Enum.all?(allowed, &is_atom/1)

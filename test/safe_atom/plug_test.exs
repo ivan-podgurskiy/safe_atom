@@ -6,6 +6,22 @@ defmodule SafeAtom.PlugTest do
   alias SafeAtom.Plug, as: PlugHelper
   alias SafeAtom.Plug.Rejection
 
+  defmodule CustomRejectionPipeline do
+    use Plug.Builder
+
+    plug(SafeAtom.Plug,
+      fields: %{status: [:active]},
+      on_reject: &__MODULE__.handle_rejection/2
+    )
+
+    def handle_rejection(conn, rejection) do
+      conn
+      |> Plug.Conn.assign(:safe_atom_rejection, rejection)
+      |> Plug.Conn.send_resp(422, "Unprocessable Content")
+      |> Plug.Conn.halt()
+    end
+  end
+
   defp conn_with_params(params) do
     conn = Plug.Test.conn(:get, "/")
     %{conn | params: params}
@@ -46,6 +62,12 @@ defmodule SafeAtom.PlugTest do
     test "raises when :fields is not a map" do
       assert_raise ArgumentError, ~r/:fields/, fn ->
         PlugHelper.init(fields: [status: [:active]])
+      end
+    end
+
+    test "raises ArgumentError when :fields is a struct" do
+      assert_raise ArgumentError, ~r/:fields/, fn ->
+        PlugHelper.init(fields: %URI{})
       end
     end
 
@@ -223,6 +245,28 @@ defmodule SafeAtom.PlugTest do
     end
   end
 
+  describe "Plug.Builder integration" do
+    test "executes an external remote rejection callback in a real pipeline" do
+      conn = conn_with_params(%{"status" => "deleted"})
+
+      result =
+        CustomRejectionPipeline.call(
+          conn,
+          CustomRejectionPipeline.init([])
+        )
+
+      assert result.halted
+      assert result.status == 422
+      assert result.resp_body == "Unprocessable Content"
+
+      assert result.assigns.safe_atom_rejection == %Rejection{
+               field: :status,
+               value: "deleted",
+               reason: :not_allowed
+             }
+    end
+  end
+
   describe "cast_params/3 with :halt" do
     test "sends a 400 Bad Request response and halts" do
       conn = conn_with_params(%{"status" => "deleted"})
@@ -282,9 +326,11 @@ defmodule SafeAtom.PlugTest do
   end
 
   describe "cast_params/3 with a custom rejection callback" do
-    test "passes complete rejection details and threads the returned conn" do
+    test "supports a closure and threads the returned conn" do
+      assign_key = :safe_atom_rejection
+
       callback = fn conn, %Rejection{} = rejection ->
-        Plug.Conn.assign(conn, :safe_atom_rejection, rejection)
+        Plug.Conn.assign(conn, assign_key, rejection)
       end
 
       conn = conn_with_params(%{"status" => %{"nested" => "active"}})

@@ -143,17 +143,25 @@ plug SafeAtom.Plug,
   on_reject: :halt
 ```
 
-For application-specific handling, pass a two-arity callback:
+For application-specific handling in a module plug, use an external remote
+function capture. `Plug.Builder` must escape initialized plug options at compile
+time, so an anonymous closure cannot be used here:
 
 ```elixir
-plug SafeAtom.Plug,
-  fields: %{status: [:active, :archived]},
-  on_reject: fn conn, rejection ->
+defmodule MyApp.ParamPipeline do
+  use Plug.Builder
+
+  plug SafeAtom.Plug,
+    fields: %{status: [:active, :archived]},
+    on_reject: &__MODULE__.handle_rejection/2
+
+  def handle_rejection(conn, rejection) do
     conn
     |> Plug.Conn.assign(:safe_atom_rejection, rejection)
     |> Plug.Conn.send_resp(422, "invalid #{rejection.field}")
     |> Plug.Conn.halt()
   end
+end
 ```
 
 The callback receives a `SafeAtom.Plug.Rejection` with `field`, `value`, and
@@ -167,9 +175,13 @@ conn =
   SafeAtom.Plug.cast_params(
     conn,
     %{status: [:active, :archived]},
-    on_reject: :drop
+    on_reject: fn conn, rejection ->
+      Plug.Conn.assign(conn, :safe_atom_rejection, rejection)
+    end
   )
 ```
+
+Direct `cast_params/3` calls accept any two-arity function, including closures.
 
 ## Why?
 
