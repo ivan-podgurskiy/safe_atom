@@ -18,7 +18,7 @@ Add `safe_atom` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:safe_atom, "~> 0.2"}
+    {:safe_atom, "~> 0.3"}
   ]
 end
 ```
@@ -83,7 +83,7 @@ Add both `safe_atom` and `ecto` to your app:
 ```elixir
 def deps do
   [
-    {:safe_atom, "~> 0.2"},
+    {:safe_atom, "~> 0.3"},
     {:ecto, "~> 3.11"}
   ]
 end
@@ -104,6 +104,72 @@ field :role, SafeAtom.Ecto.Enum, values: [:user, :guest]
 Changeset casting accepts whitelisted strings and atoms; invalid values produce
 Ecto inclusion errors. On insert, whitelisted atoms dump to their string form; on
 load, DB strings are matched against `values` without `String.to_atom/1`.
+
+## Plug
+
+`SafeAtom.Plug` casts selected top-level request params using a separate atom
+whitelist for each field. Plug is optional, so applications using this helper
+must include both dependencies:
+
+```elixir
+def deps do
+  [
+    {:safe_atom, "~> 0.3"},
+    {:plug, "~> 1.0"}
+  ]
+end
+```
+
+Use it as a module plug in a router or controller pipeline:
+
+```elixir
+plug SafeAtom.Plug,
+  fields: %{
+    status: [:active, :archived],
+    sort: [:asc, :desc]
+  }
+```
+
+Configured field names are atoms, but the helper reads and updates only
+string-keyed params. A successful cast produces values such as
+`%{"status" => :active}` and leaves unrelated params unchanged.
+
+Rejected values are dropped by default. To return a generic 400 response and
+stop processing:
+
+```elixir
+plug SafeAtom.Plug,
+  fields: %{status: [:active, :archived]},
+  on_reject: :halt
+```
+
+For application-specific handling, pass a two-arity callback:
+
+```elixir
+plug SafeAtom.Plug,
+  fields: %{status: [:active, :archived]},
+  on_reject: fn conn, rejection ->
+    conn
+    |> Plug.Conn.assign(:safe_atom_rejection, rejection)
+    |> Plug.Conn.send_resp(422, "invalid #{rejection.field}")
+    |> Plug.Conn.halt()
+  end
+```
+
+The callback receives a `SafeAtom.Plug.Rejection` with `field`, `value`, and
+`reason`. The helper stops processing more fields if the callback returns a
+halted connection.
+
+For ad-hoc use in a controller action:
+
+```elixir
+conn =
+  SafeAtom.Plug.cast_params(
+    conn,
+    %{status: [:active, :archived]},
+    on_reject: :drop
+  )
+```
 
 ## Why?
 

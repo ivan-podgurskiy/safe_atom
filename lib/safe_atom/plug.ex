@@ -17,6 +17,33 @@ if Code.ensure_loaded?(Plug.Conn) do
   defmodule SafeAtom.Plug do
     @moduledoc """
     Casts named request parameters against per-field atom whitelists.
+
+    Configured field names are atoms, while request param lookups use their string
+    forms. Successful values remain under string keys. Rejected values are dropped
+    by default.
+
+    ## Module plug
+
+        plug SafeAtom.Plug,
+          fields: %{status: [:active, :archived], sort: [:asc, :desc]}
+
+    Use `on_reject: :halt` to send a 400 response and halt the connection, or pass
+    a two-arity function that receives the connection and a
+    `SafeAtom.Plug.Rejection` structure.
+
+    ## Function plug
+
+        iex> conn = Plug.Test.conn(:get, "/")
+        iex> conn = %{conn | params: %{"status" => "active", "query" => "keep"}}
+        iex> conn = SafeAtom.Plug.cast_params(conn, %{status: [:active, :archived]})
+        iex> conn.params
+        %{"query" => "keep", "status" => :active}
+
+        iex> conn = Plug.Test.conn(:get, "/")
+        iex> conn = %{conn | params: %{"status" => "deleted"}}
+        iex> conn = SafeAtom.Plug.cast_params(conn, %{status: [:active]})
+        iex> conn.params
+        %{}
     """
 
     @behaviour Plug
