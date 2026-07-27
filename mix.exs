@@ -39,6 +39,7 @@ defmodule SafeAtom.MixProject do
     [
       {:telemetry, "~> 1.0"},
       {:ecto, "~> 3.11", optional: true},
+      {:plug, "~> 1.0", optional: true},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
