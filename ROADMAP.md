@@ -29,8 +29,13 @@ Out of scope for the first release: global whitelists in config, Plug, `:on_reje
 - `SafeAtom.Ecto.Enum` — Ecto type with required `values:` for string-backed atom enum fields (optional `ecto` dep)
 - cast / load / dump via `SafeAtom.cast/2`; Ecto-style inclusion errors on changesets
 
+## What we shipped (v0.3.0)
+
+- `SafeAtom.Plug` — module and function plug for casting named top-level params against per-field atom whitelists
+- Rejected values can be dropped, halt with a 400 response, or be handled by a custom callback
+- Optional `plug` dependency; consumers without Plug continue to compile
+
 ## What’s next
 
-- Plug helper for params
 - Whitelist via `Application` config
 - Per-field whitelists (`:allowed_per_field`)

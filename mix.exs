@@ -1,7 +1,7 @@
 defmodule SafeAtom.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.3.0"
   @source_url "https://github.com/ivan-podgurskiy/safe_atom"
 
   def project do
@@ -23,7 +23,7 @@ defmodule SafeAtom.MixProject do
 
       # Dialyzer
       dialyzer: [
-        plt_add_apps: [:ex_unit, :mix],
+        plt_add_apps: [:ex_unit, :mix, :plug],
         plt_local_path: "priv/plts/local.plt",
         plt_core_path: "priv/plts/core.plt"
       ]
@@ -39,6 +39,7 @@ defmodule SafeAtom.MixProject do
     [
       {:telemetry, "~> 1.0"},
       {:ecto, "~> 3.11", optional: true},
+      {:plug, "~> 1.0", optional: true},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
@@ -63,7 +64,11 @@ defmodule SafeAtom.MixProject do
       main: "SafeAtom",
       source_ref: "v#{@version}",
       source_url: @source_url,
-      extras: ["README.md", "CHANGELOG.md", "LICENSE"]
+      extras: ["README.md", "CHANGELOG.md", "LICENSE"],
+      groups_for_modules: [
+        Ecto: [SafeAtom.Ecto.Enum],
+        Plug: [SafeAtom.Plug, SafeAtom.Plug.Rejection]
+      ]
     ]
   end
 end
